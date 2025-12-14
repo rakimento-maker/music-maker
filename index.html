@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood-to-Music Playlist Generator</title>
+    <style>
+        /* General Setup */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            max-width: 650px;
+            width: 100%;
+            text-align: center;
+            overflow: hidden; 
+        }
+
+        /* DJ Table Graphic Container */
+        .header-container {
+            position: relative;
+            background-color: #333;
+            padding: 40px 20px 20px;
+            border-radius: 10px 10px 0 0;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Pseudo-element for DJ Table Graphic (Using simple CSS to represent equipment) */
+        .header-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 25% 60%, #555 10px, transparent 11px) 15% 50% / 50% 100% no-repeat,
+                radial-gradient(circle at 75% 60%, #555 10px, transparent 11px) 85% 50% / 50% 100% no-repeat,
+                linear-gradient(to right, #444 20%, #222 50%, #444 80%);
+            opacity: 0.15;
+            z-index: 1;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
+            color: white;
+        }
+
+        h1 {
+            color: #00ff99; /* Neon Green Title */
+            margin-bottom: 10px;
+            text-shadow: 0 0 5px #00ff99;
+        }
+
+        p.subtitle {
+            margin-bottom: 30px;
+            color: #ccc;
+        }
+        
+        /* Input and Button Styling */
+        #mood-input {
+            width: calc(100% - 20px);
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        #mood-input:focus {
+            border-color: #1a73e8;
+            outline: none;
+        }
+
+        #generate-btn {
+            background-color: #1a73e8;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        #generate-btn:hover {
+            background-color: #1660c4;
+        }
+
+        #generate-btn:disabled {
+            background-color: #999;
+            cursor: not-allowed;
+        }
+
+        #loading-indicator {
+            margin-top: 20px;
+            font-style: italic;
+            color: #fbbc05;
+            display: none; 
+        }
+
+        /* Playlist Output */
+        #playlist-output {
+            margin-top: 30px;
+            text-align: left;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        #playlist-output h2, #history-output h2 {
+            color: #34a853;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+
+        #playlist-output ul, #history-output ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        #playlist-output li, #history-output li {
+            background-color: #e8f0fe;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            font-size: 15px;
+            word-wrap: break-word;
+        }
+
+        #playlist-output a, #history-output a {
+            color: #1a73e8;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .error-message {
+            color: #ea4335;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        /* History Styling */
+        #history-output h2 {
+            color: #4285f4 !important; /* Google Blue */
+        }
+        
+        #history-output .history-record {
+            margin-bottom: 20px; 
+            padding: 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        
+        #history-output h3 {
+            color: #333; 
+            margin-top: 0;
+            font-size: 16px;
+        }
+
+        #history-output .timestamp {
+            font-size: 0.8em; 
+            font-weight: normal; 
+            color: #777;
+        }
+
+        .clear-btn {
+            background-color: #ea4335; 
+            color: white; 
+            padding: 8px 15px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            margin-bottom: 20px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- DJ Table Graphic Header -->
+        <div class="header-container">
+            <div class="header-content">
+                <h1>🎧 Mood-to-Music Generator</h1>
+                <p class="subtitle">Tell me your mood, and I'll create the perfect 5-song YouTube playlist.</p>
+            </div>
+        </div>
+
+        <input type="text" id="mood-input" placeholder="Enter your mood now here">
+        <button id="generate-btn">Generate Playlist</button>
+
+        <div id="loading-indicator">Generating your playlist...</div>
+        <div id="playlist-output">
+            <!-- Current Playlist will be inserted here -->
+        </div>
+        <!-- History Output will be appended here by the script -->
+    </div>
+
+    <script>
+        // *******************************************************************
+        // !!! API KEY INSERTED HERE !!!
+        // *******************************************************************
+        const API_ENDPOINT = "https://music-generator.rakimento.workers.dev/"; 
+
+        // --- DOM ELEMENTS ---
+        const moodInput = document.getElementById('mood-input');
+        const generateButton = document.getElementById('generate-btn');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const playlistOutput = document.getElementById('playlist-output');
+        
+        // --- NEW DOM ELEMENT FOR HISTORY ---
+        const historyOutput = document.createElement('div');
+        historyOutput.id = 'history-output';
+        const container = document.querySelector('.container'); 
+        container.appendChild(historyOutput);
+
+
+        // --- HISTORY FUNCTIONS (UNCHANGED) ---
+        function displayHistory() {
+            const history = JSON.parse(localStorage.getItem('playlistHistory')) || [];
+            
+            if (history.length === 0) {
+                historyOutput.innerHTML = '';
+                return;
+            }
+
+            let historyHtml = `
+                <h2 style="color: #4285f4; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">📜 Playlist History</h2>
+            `;
+            
+            history.slice().reverse().forEach((record) => { 
+                const date = new Date(record.timestamp).toLocaleString();
+                historyHtml += `
+                    <div class="history-record">
+                        <h3>Mood: ${record.mood} <span class="timestamp">(${date})</span></h3>
+                        <ul style="list-style: none; padding: 0;">
+                            ${record.html} 
+                        </ul>
+                    </div>
+                `;
+            });
+
+            historyHtml += '<button onclick="clearHistory()" class="clear-btn">Clear History</button>';
+
+            historyOutput.innerHTML = historyHtml;
+        }
+
+        function saveHistory(mood, htmlContent) {
+            const history = JSON.parse(localStorage.getItem('playlistHistory')) || [];
+            
+            const newRecord = {
+                mood: mood,
+                html: htmlContent, 
+                timestamp: Date.now()
+            };
+
+            history.push(newRecord);
+            if (history.length > 10) {
+                history.shift(); 
+            }
+
+            localStorage.setItem('playlistHistory', JSON.stringify(history));
+            displayHistory(); 
+        }
+
+        function clearHistory() {
+            if (confirm("Are you sure you want to clear your entire playlist history?")) {
+                localStorage.removeItem('playlistHistory');
+                displayHistory(); 
+            }
+        }
+        window.clearHistory = clearHistory; 
+
+        // --- EVENT LISTENERS (UNCHANGED) ---
+        generateButton.addEventListener('click', generatePlaylist);
+        moodInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                generatePlaylist();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', displayHistory);
+
+        // --- MAIN FUNCTION (SIMPLIFIED REQUEST BODY) ---
+        async function generatePlaylist() {
+            const mood = moodInput.value.trim();
+            if (!mood) {
+                alert("Please enter a mood.");
+                return;
+            }
+
+            // --- UI State: Start Loading ---
+            playlistOutput.innerHTML = '';
+            loadingIndicator.style.display = 'block';
+            generateButton.disabled = true;
+            moodInput.disabled = true;
+
+            // --- API Request Body (EXTREME SIMPLIFICATION) ---
+            const requestBody = {
+                "contents": [
+                    {
+                        "role": "user",
+                        "parts": [
+                            // ALL instructions and mood are combined into the user prompt
+                            {"text": `Generate a 5-song playlist for the mood: ${mood}. Provide the song title, artist, and a YouTube link for each song, formatted exactly as: 1. [Title] by [Artist] - [Full YouTube Link]. Do not add any extra text.`}
+                        ]
+                    }
+                ]
+                // The "config" section with systemInstruction is REMOVED
+            };
+
+            try {
+                // --- API Call to Gemini ---
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const playlistText = data.candidates[0].content.parts[0].text;
+
+                // --- Process, Display, AND SAVE Playlist ---
+                const listItemsHtml = displayPlaylist(playlistText, mood);
+                saveHistory(mood, listItemsHtml); 
+
+            } catch (error) {
+                console.error("Error generating playlist:", error);
+                playlistOutput.innerHTML = `<p class="error-message">Error generating playlist. Please check your API key and network connection. (Details: ${error.message})</p>`;
+
+            } finally {
+                // --- UI State: Stop Loading ---
+                loadingIndicator.style.display = 'none';
+                generateButton.disabled = false;
+                moodInput.disabled = false;
+            }
+        }
+
+
+        // --- DISPLAY FUNCTION (UNCHANGED) ---
+        function displayPlaylist(playlistText, mood) {
+            const lines = playlistText.split(/\r?\n/).filter(line => line.trim() !== '');
+
+            let listItemsHtml = '';
+            
+            lines.forEach(line => {
+                const linkMatch = line.match(/(https?:\/\/[^\s]+)/);
+                let displayText = line;
+                let link = null;
+
+                if (linkMatch) {
+                    link = linkMatch[0];
+                    displayText = line.replace(link, '').trim();
+                }
+
+                if (link) {
+                    listItemsHtml += `<li>${displayText} - <a href="${link}" target="_blank">Listen on YouTube</a></li>`;
+                } else {
+                    listItemsHtml += `<li>${line} (Link unavailable)</li>`;
+                }
+            });
+
+            let displayHtml = `<h2>🎶 Your Playlist for a "${mood}" Mood:</h2><ul>${listItemsHtml}</ul>`;
+            playlistOutput.innerHTML = displayHtml;
+            
+            return listItemsHtml; 
+        }
+    </script>
+</body>
+</html>
